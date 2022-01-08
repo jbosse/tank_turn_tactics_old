@@ -5,6 +5,9 @@ defmodule TankTurnTactics.GameTest do
   alias TankTurnTactics.Games.Tank
   alias TankTurnTactics.Players.Player
 
+  @board_3x3 1..9 |> Enum.to_list() |> Enum.map(fn _ -> nil end)
+  @board_7x7 1..49 |> Enum.to_list() |> Enum.map(fn _ -> nil end)
+
   describe "new/0" do
     test "creates a new game" do
       game = Game.new()
@@ -78,7 +81,7 @@ defmodule TankTurnTactics.GameTest do
     test "returns the location of the player" do
       player = %Player{id: 1}
       tank = %Tank{player: player, hearts: 3, action_points: 0}
-      board = [nil, nil, nil, nil, nil, tank, nil, nil, nil]
+      board = @board_3x3 |> List.replace_at(5, tank)
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       assert {:ok, {3, 2}} == Game.location(game, player)
@@ -86,7 +89,7 @@ defmodule TankTurnTactics.GameTest do
 
     test "returns error when the player is not on the board" do
       player = %Player{id: 1}
-      board = [nil, nil, nil, nil, nil, nil, nil, nil, nil]
+      board = @board_3x3
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       assert {:error, :player_not_found} == Game.location(game, player)
@@ -97,7 +100,7 @@ defmodule TankTurnTactics.GameTest do
     test "returns the square at the given location" do
       player = %Player{id: 1}
       tank = %Tank{player: player, hearts: 3, action_points: 0}
-      board = [nil, nil, nil, nil, nil, tank, nil, nil, nil]
+      board = @board_3x3 |> List.replace_at(5, tank)
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       assert {:ok, ^tank} = Game.square(game, 3, 2)
@@ -106,7 +109,7 @@ defmodule TankTurnTactics.GameTest do
 
     test "returns error when the location is out of bounds" do
       player = %Player{id: 1}
-      board = [nil, nil, nil, nil, nil, nil, nil, nil, nil]
+      board = @board_3x3
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       assert {:error, :out_of_bounds} == Game.square(game, 4, 2)
@@ -118,7 +121,7 @@ defmodule TankTurnTactics.GameTest do
     test "moves the player to the given location" do
       player = %Player{id: 1}
       tank = %Tank{player: player, hearts: 3, action_points: 1}
-      board = [nil, nil, nil, nil, nil, tank, nil, nil, nil]
+      board = @board_3x3 |> List.replace_at(5, tank)
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       {:ok, game} = Game.move(game, player, {1, 1})
@@ -129,7 +132,7 @@ defmodule TankTurnTactics.GameTest do
 
     test "returns error when the location is out of bounds" do
       player = %Player{id: 1}
-      board = [nil, nil, nil, nil, nil, nil, nil, nil, nil]
+      board = @board_3x3
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       assert {:error, :out_of_bounds} == Game.move(game, player, {4, 2})
@@ -140,57 +143,7 @@ defmodule TankTurnTactics.GameTest do
       player = %Player{id: 1}
       tank = %Tank{player: player, hearts: 3, action_points: 1, range: 2}
 
-      board = [
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        tank,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil
-      ]
+      board = @board_7x7 |> List.replace_at(24, tank)
 
       game = %Game{width: 7, height: 7, players: [player], board: board}
 
