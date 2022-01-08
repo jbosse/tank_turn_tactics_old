@@ -29,15 +29,18 @@ defmodule TankTurnTactics.Games.Game do
   end
 
   def location(%Game{board: board} = game, %Player{} = player) do
-    board
-    |> Enum.chunk_every(game.width)
-    |> Enum.with_index()
-    |> Enum.reduce({0, 0}, fn {row, y_index}, acc ->
-      case row |> Enum.find_index(fn sq -> sq != nil && sq.player == player end) do
-        nil -> acc
-        x_index -> {x_index + 1, y_index + 1}
-      end
-    end)
+    loc =
+      board
+      |> Enum.chunk_every(game.width)
+      |> Enum.with_index()
+      |> Enum.reduce({0, 0}, fn {row, y_index}, acc ->
+        case row |> Enum.find_index(fn sq -> sq != nil && sq.player == player end) do
+          nil -> acc
+          x_index -> {x_index + 1, y_index + 1}
+        end
+      end)
+
+    if loc == {0, 0}, do: {:error, :player_not_found}, else: {:ok, loc}
   end
 
   def square(%Game{board: board} = game, x, y) do
