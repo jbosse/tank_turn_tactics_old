@@ -12,7 +12,8 @@ config :tank_turn_tactics, TankTurnTactics.Repo,
   username: "postgres",
   password: "postgres",
   database: "tank_turn_tactics_test#{System.get_env("MIX_TEST_PARTITION")}",
-  hostname: "localhost",
+  hostname: System.get_env("DB_HOST", "localhost"),
+  port: System.get_env("DB_PORT", "5432"),
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10
 
