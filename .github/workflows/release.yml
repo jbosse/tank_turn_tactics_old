@@ -11,7 +11,7 @@ name: Release
 on: 
   push:
     branches:
-      - "mainX" # Remove X when ready to enable this action.
+      - "main"
 
 jobs:
   build:
