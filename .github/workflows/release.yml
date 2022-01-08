@@ -1,7 +1,7 @@
 name: Release
 
 # Required GitHub Secrets
-# GITHUB_TOKEN: The GitHub token with permissions to create tags and releases
+# GITHUB_TOKEN: The GitHub token with permissions to create tags and releases (auto-generated)
 # DOKKU_HOST: The hostname of the Dokku server
 # DOKKU_PORT: The port of the Dokku server
 # DOKKU_APP_NAME: The name of the Dokku app to deploy to
