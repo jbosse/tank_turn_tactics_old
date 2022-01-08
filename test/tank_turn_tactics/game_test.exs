@@ -2,6 +2,7 @@ defmodule TankTurnTactics.GameTest do
   use ExUnit.Case, async: true
 
   alias TankTurnTactics.Games.Game
+  alias TankTurnTactics.Games.Tank
   alias TankTurnTactics.Players.Player
 
   describe "new/0" do
@@ -66,7 +67,7 @@ defmodule TankTurnTactics.GameTest do
       tanks = board |> Enum.reject(fn sq -> sq == nil end)
 
       tanks
-      |> Enum.each(fn tank ->
+      |> Enum.each(fn %Tank{} = tank ->
         assert 3 == tank.hearts
         assert 0 == tank.action_points
       end)
