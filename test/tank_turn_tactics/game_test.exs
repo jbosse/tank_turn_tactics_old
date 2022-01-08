@@ -120,7 +120,7 @@ defmodule TankTurnTactics.GameTest do
       board = [nil, nil, nil, nil, nil, tank, nil, nil, nil]
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
-      game = Game.move(game, player, {1, 1})
+      {:ok, game} = Game.move(game, player, {1, 1})
 
       assert {:ok, {1, 1}} = game |> Game.location(player)
       assert %Tank{player: ^player, action_points: 0} = game |> Game.square(1, 1)

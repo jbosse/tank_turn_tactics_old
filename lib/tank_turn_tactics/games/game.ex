@@ -79,6 +79,6 @@ defmodule TankTurnTactics.Games.Game do
         end)
       end)
 
-    %Game{game | board: board}
+    {:ok, %Game{game | board: board}}
   end
 end
