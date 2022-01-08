@@ -1,3 +1,5 @@
+![Tests](https://github.com/jbosse/tank_turn_tactics/actions/workflows/elixir.yml/badge.svg)
+
 # TankTurnTactics
 For fun I am attempting to implement the game described in the GDC 2013 talk by Luke Muscat from Halfbrick Studios.
 https://youtu.be/t9WMNuyjm4w
