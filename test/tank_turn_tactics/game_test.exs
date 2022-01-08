@@ -1,5 +1,5 @@
 defmodule TankTurnTactics.GameTest do
-  use TankTurnTactics.DataCase
+  use ExUnit.Case, async: true
 
   alias TankTurnTactics.Games.Game
   alias TankTurnTactics.Players.Player
