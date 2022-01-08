@@ -135,5 +135,82 @@ defmodule TankTurnTactics.GameTest do
       assert {:error, :out_of_bounds} == Game.move(game, player, {4, 2})
       assert {:error, :out_of_bounds} == Game.move(game, player, {2, 4})
     end
+
+    test "returns error when the desired location is out of range" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 1, range: 2}
+
+      board = [
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        tank,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil
+      ]
+
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :out_of_range} = Game.move(game, player, {7, 4})
+      assert {:error, :out_of_range} = Game.move(game, player, {1, 4})
+      assert {:error, :out_of_range} = Game.move(game, player, {4, 1})
+      assert {:error, :out_of_range} = Game.move(game, player, {4, 7})
+      assert {:error, :out_of_range} = Game.move(game, player, {1, 1})
+      assert {:error, :out_of_range} = Game.move(game, player, {7, 1})
+      assert {:error, :out_of_range} = Game.move(game, player, {1, 7})
+      assert {:error, :out_of_range} = Game.move(game, player, {7, 7})
+
+      assert {:ok, _} = Game.move(game, player, {2, 2})
+      assert {:ok, _} = Game.move(game, player, {4, 2})
+      assert {:ok, _} = Game.move(game, player, {6, 2})
+      assert {:ok, _} = Game.move(game, player, {2, 4})
+      assert {:ok, _} = Game.move(game, player, {6, 4})
+      assert {:ok, _} = Game.move(game, player, {2, 6})
+      assert {:ok, _} = Game.move(game, player, {4, 6})
+      assert {:ok, _} = Game.move(game, player, {6, 6})
+    end
   end
 end

@@ -54,31 +54,46 @@ defmodule TankTurnTactics.Games.Game do
   def move(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
   def move(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
 
-  def move(%Game{board: board} = game, %Player{} = player, move_to) do
-    {:ok, {x, y}} = game |> Game.location(player)
-    {:ok, tank} = game |> Game.square(x, y)
+  def move(%Game{board: board} = game, %Player{} = player, {new_x, new_y} = move_to) do
+    {:ok, {old_x, old_y}} = game |> Game.location(player)
+    {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
 
-    board =
-      board
-      |> Enum.chunk_every(game.width)
-      |> Enum.with_index()
-      |> Enum.flat_map(fn {row, y_index} ->
-        row
-        |> Enum.with_index()
-        |> Enum.map(fn {sq, x_index} ->
-          cond do
-            move_to == {x_index + 1, y_index + 1} ->
-              %Tank{tank | action_points: tank.action_points - 1}
+    cond do
+      new_x - old_x > range ->
+        {:error, :out_of_range}
 
-            sq == nil ->
-              nil
+      old_x - new_x > range ->
+        {:error, :out_of_range}
 
-            sq.player == player ->
-              nil
-          end
-        end)
-      end)
+      old_y - new_y > range ->
+        {:error, :out_of_range}
 
-    {:ok, %Game{game | board: board}}
+      new_y - old_y > range ->
+        {:error, :out_of_range}
+
+      true ->
+        board =
+          board
+          |> Enum.chunk_every(game.width)
+          |> Enum.with_index()
+          |> Enum.flat_map(fn {row, y_index} ->
+            row
+            |> Enum.with_index()
+            |> Enum.map(fn {sq, x_index} ->
+              cond do
+                move_to == {x_index + 1, y_index + 1} ->
+                  %Tank{tank | action_points: tank.action_points - 1}
+
+                sq == nil ->
+                  nil
+
+                sq.player == player ->
+                  nil
+              end
+            end)
+          end)
+
+        {:ok, %Game{game | board: board}}
+    end
   end
 end
