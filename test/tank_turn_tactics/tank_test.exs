@@ -13,6 +13,7 @@ defmodule TankTurnTactics.TankTest do
       assert player1 == tank.player
       assert 3 == tank.hearts
       assert 0 == tank.action_points
+      assert 2 == tank.range
     end
   end
 end

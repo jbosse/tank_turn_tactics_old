@@ -50,4 +50,35 @@ defmodule TankTurnTactics.Games.Game do
     index = (y - 1) * game.width + (x - 1)
     board |> Enum.at(index)
   end
+
+  def move(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
+  def move(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
+
+  def move(%Game{board: board} = game, %Player{} = player, move_to) do
+    {:ok, {x, y}} = game |> Game.location(player)
+    tank = game |> Game.square(x, y)
+
+    board =
+      board
+      |> Enum.chunk_every(game.width)
+      |> Enum.with_index()
+      |> Enum.flat_map(fn {row, y_index} ->
+        row
+        |> Enum.with_index()
+        |> Enum.map(fn {sq, x_index} ->
+          cond do
+            move_to == {x_index + 1, y_index + 1} ->
+              %Tank{tank | action_points: tank.action_points - 1}
+
+            sq == nil ->
+              nil
+
+            sq.player == player ->
+              nil
+          end
+        end)
+      end)
+
+    %Game{game | board: board}
+  end
 end
