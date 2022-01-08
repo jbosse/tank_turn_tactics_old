@@ -39,4 +39,9 @@ defmodule TankTurnTactics.Games.Game do
       end
     end)
   end
+
+  def square(%Game{board: board} = game, x, y) do
+    index = (y - 1) * game.width + (x - 1)
+    board |> Enum.at(index)
+  end
 end
