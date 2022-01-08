@@ -15,7 +15,7 @@ defmodule TankTurnTactics.Games.Game do
   def start(%Game{} = game) do
     number_of_players = game.players |> Enum.count()
     size = game.width * game.height - number_of_players
-    tanks = game.players |> Enum.map(fn p -> %{player: p} end)
+    tanks = game.players |> Enum.map(fn p -> %{player: p, hearts: 3, action_points: 0} end)
 
     board =
       1..size

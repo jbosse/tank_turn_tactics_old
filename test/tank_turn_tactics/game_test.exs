@@ -55,5 +55,21 @@ defmodule TankTurnTactics.GameTest do
 
       assert 95 < uniq_spawns |> Enum.count()
     end
+
+    test "starts each tank with 3 hearts and 0 action points" do
+      player1 = %Player{id: 1}
+      player2 = %Player{id: 2}
+      game = %Game{width: 20, height: 20, players: [player1, player2]}
+
+      %Game{board: board} = game |> Game.start()
+
+      tanks = board |> Enum.reject(fn sq -> sq == nil end)
+
+      tanks
+      |> Enum.each(fn tank ->
+        assert 3 == tank.hearts
+        assert 0 == tank.action_points
+      end)
+    end
   end
 end
