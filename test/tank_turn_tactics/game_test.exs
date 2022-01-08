@@ -142,9 +142,7 @@ defmodule TankTurnTactics.GameTest do
     test "returns error when the desired location is out of range" do
       player = %Player{id: 1}
       tank = %Tank{player: player, hearts: 3, action_points: 1, range: 2}
-
       board = @board_7x7 |> List.replace_at(24, tank)
-
       game = %Game{width: 7, height: 7, players: [player], board: board}
 
       assert {:error, :out_of_range} = Game.move(game, player, {7, 4})
@@ -164,6 +162,23 @@ defmodule TankTurnTactics.GameTest do
       assert {:ok, _} = Game.move(game, player, {2, 6})
       assert {:ok, _} = Game.move(game, player, {4, 6})
       assert {:ok, _} = Game.move(game, player, {6, 6})
+    end
+
+    test "returns error when the player is not on the board" do
+      player = %Player{id: 1}
+      board = @board_7x7
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :player_not_found} = Game.move(game, player, {6, 4})
+    end
+
+    test "returns error when the player does not have an action point to move" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 0, range: 2}
+      board = @board_7x7 |> List.replace_at(24, tank)
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :not_enough_action_points} = Game.move(game, player, {6, 4})
     end
   end
 end

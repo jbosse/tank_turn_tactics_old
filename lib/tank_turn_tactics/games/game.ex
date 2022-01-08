@@ -55,45 +55,56 @@ defmodule TankTurnTactics.Games.Game do
   def move(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
 
   def move(%Game{board: board} = game, %Player{} = player, {new_x, new_y} = move_to) do
-    {:ok, {old_x, old_y}} = game |> Game.location(player)
-    {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
+    case game |> Game.location(player) do
+      {:ok, {old_x, old_y}} ->
+        {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
 
-    cond do
-      new_x - old_x > range ->
-        {:error, :out_of_range}
+        cond do
+          tank.action_points < 1 ->
+            {:error, :not_enough_action_points}
 
-      old_x - new_x > range ->
-        {:error, :out_of_range}
+          new_x - old_x > range ->
+            {:error, :out_of_range}
 
-      old_y - new_y > range ->
-        {:error, :out_of_range}
+          old_x - new_x > range ->
+            {:error, :out_of_range}
 
-      new_y - old_y > range ->
-        {:error, :out_of_range}
+          old_y - new_y > range ->
+            {:error, :out_of_range}
 
-      true ->
-        board =
-          board
-          |> Enum.chunk_every(game.width)
-          |> Enum.with_index()
-          |> Enum.flat_map(fn {row, y_index} ->
-            row
-            |> Enum.with_index()
-            |> Enum.map(fn {sq, x_index} ->
-              cond do
-                move_to == {x_index + 1, y_index + 1} ->
-                  %Tank{tank | action_points: tank.action_points - 1}
+          new_y - old_y > range ->
+            {:error, :out_of_range}
 
-                sq == nil ->
-                  nil
+          true ->
+            board = move_tank(board, game.width, tank, move_to)
 
-                sq.player == player ->
-                  nil
-              end
-            end)
-          end)
+            {:ok, %Game{game | board: board}}
+        end
 
-        {:ok, %Game{game | board: board}}
+      error ->
+        error
     end
+  end
+
+  defp move_tank(board, width, tank, move_to) do
+    board
+    |> Enum.chunk_every(width)
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {row, y_index} ->
+      row
+      |> Enum.with_index()
+      |> Enum.map(fn {sq, x_index} ->
+        cond do
+          move_to == {x_index + 1, y_index + 1} ->
+            %Tank{tank | action_points: tank.action_points - 1}
+
+          sq == nil ->
+            nil
+
+          sq.player == tank.player ->
+            nil
+        end
+      end)
+    end)
   end
 end
