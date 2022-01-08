@@ -48,7 +48,7 @@ defmodule TankTurnTactics.Games.Game do
 
   def square(%Game{board: board} = game, x, y) do
     index = (y - 1) * game.width + (x - 1)
-    board |> Enum.at(index)
+    {:ok, board |> Enum.at(index)}
   end
 
   def move(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
@@ -56,7 +56,7 @@ defmodule TankTurnTactics.Games.Game do
 
   def move(%Game{board: board} = game, %Player{} = player, move_to) do
     {:ok, {x, y}} = game |> Game.location(player)
-    tank = game |> Game.square(x, y)
+    {:ok, tank} = game |> Game.square(x, y)
 
     board =
       board

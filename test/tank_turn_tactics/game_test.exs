@@ -100,7 +100,8 @@ defmodule TankTurnTactics.GameTest do
       board = [nil, nil, nil, nil, nil, tank, nil, nil, nil]
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
-      assert tank == Game.square(game, 3, 2)
+      assert {:ok, ^tank} = Game.square(game, 3, 2)
+      assert {:ok, nil} = Game.square(game, 1, 1)
     end
 
     test "returns error when the location is out of bounds" do
@@ -123,7 +124,7 @@ defmodule TankTurnTactics.GameTest do
       {:ok, game} = Game.move(game, player, {1, 1})
 
       assert {:ok, {1, 1}} = game |> Game.location(player)
-      assert %Tank{player: ^player, action_points: 0} = game |> Game.square(1, 1)
+      assert {:ok, %Tank{player: ^player, action_points: 0}} = game |> Game.square(1, 1)
     end
 
     test "returns error when the location is out of bounds" do
