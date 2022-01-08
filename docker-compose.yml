@@ -4,6 +4,6 @@ services:
     image: postgres
     ports:
       - "5432:5432"
-    container_name: db
+    container_name: tank_turn_tactics_db
     environment:
       POSTGRES_PASSWORD: postgres
