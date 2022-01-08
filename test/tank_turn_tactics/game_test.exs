@@ -5,7 +5,7 @@ defmodule TankTurnTactics.GameTest do
   alias TankTurnTactics.Players.Player
 
   describe "new/0" do
-    test "should create a new game" do
+    test "creates a new game" do
       game = Game.new()
 
       assert 20 == game.width
@@ -15,7 +15,7 @@ defmodule TankTurnTactics.GameTest do
   end
 
   describe "join/2" do
-    test "should add a player to the game" do
+    test "adds a player to the game" do
       game = %Game{players: []}
       player = %Player{}
 
@@ -26,7 +26,7 @@ defmodule TankTurnTactics.GameTest do
   end
 
   describe "start/1" do
-    test "should start the game" do
+    test "starts the game" do
       player1 = %Player{id: 1}
       player2 = %Player{id: 2}
       game = %Game{width: 20, height: 20, players: [player1, player2]}
@@ -38,7 +38,7 @@ defmodule TankTurnTactics.GameTest do
       assert 1 == board |> Enum.count(fn sq -> sq != nil && sq.player == player2 end)
     end
 
-    test "should start a player in a random cell" do
+    test "starts each player in a random cell" do
       player1 = %Player{id: 1}
       player2 = %Player{id: 2}
       game = %Game{width: 20, height: 20, players: [player1, player2]}
