@@ -43,6 +43,9 @@ defmodule TankTurnTactics.Games.Game do
     if loc == {0, 0}, do: {:error, :player_not_found}, else: {:ok, loc}
   end
 
+  def square(%Game{} = game, x, _y) when x > game.width, do: {:error, :out_of_bounds}
+  def square(%Game{} = game, _x, y) when y > game.height, do: {:error, :out_of_bounds}
+
   def square(%Game{board: board} = game, x, y) do
     index = (y - 1) * game.width + (x - 1)
     board |> Enum.at(index)

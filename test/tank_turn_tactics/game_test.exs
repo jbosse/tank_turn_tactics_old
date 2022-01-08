@@ -78,40 +78,15 @@ defmodule TankTurnTactics.GameTest do
     test "returns the location of the player" do
       player = %Player{id: 1}
       tank = %Tank{player: player, hearts: 3, action_points: 0}
-
-      board = [
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        tank,
-        nil,
-        nil,
-        nil
-      ]
-
+      board = [nil, nil, nil, nil, nil, tank, nil, nil, nil]
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       assert {:ok, {3, 2}} == Game.location(game, player)
     end
 
-    test "returns nil when the player is not on the board" do
+    test "returns error when the player is not on the board" do
       player = %Player{id: 1}
-      tank = %Tank{player: player, hearts: 3, action_points: 0}
-
-      board = [
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        nil
-      ]
-
+      board = [nil, nil, nil, nil, nil, nil, nil, nil, nil]
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       assert {:error, :player_not_found} == Game.location(game, player)
@@ -122,22 +97,19 @@ defmodule TankTurnTactics.GameTest do
     test "returns the square at the given location" do
       player = %Player{id: 1}
       tank = %Tank{player: player, hearts: 3, action_points: 0}
-
-      board = [
-        nil,
-        nil,
-        nil,
-        nil,
-        nil,
-        tank,
-        nil,
-        nil,
-        nil
-      ]
-
+      board = [nil, nil, nil, nil, nil, tank, nil, nil, nil]
       game = %Game{width: 3, height: 3, players: [player], board: board}
 
       assert tank == Game.square(game, 3, 2)
+    end
+
+    test "returns error when the location is out of bounds" do
+      player = %Player{id: 1}
+      board = [nil, nil, nil, nil, nil, nil, nil, nil, nil]
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      assert {:error, :out_of_bounds} == Game.square(game, 4, 2)
+      assert {:error, :out_of_bounds} == Game.square(game, 2, 4)
     end
   end
 end
