@@ -73,4 +73,27 @@ defmodule TankTurnTactics.GameTest do
       end)
     end
   end
+
+  describe "location/2" do
+    test "returns the location of the player" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 0}
+
+      board = [
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        tank,
+        nil,
+        nil,
+        nil
+      ]
+
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      assert {3, 2} == Game.location(game, player)
+    end
+  end
 end
