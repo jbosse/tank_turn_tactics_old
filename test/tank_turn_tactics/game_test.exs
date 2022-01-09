@@ -180,5 +180,23 @@ defmodule TankTurnTactics.GameTest do
 
       assert {:error, :not_enough_action_points} = Game.move(game, player, {6, 4})
     end
+
+    test "returns error when the desired location is occupied" do
+      player = %Player{id: 1}
+
+      board =
+        @board_7x7
+        |> List.replace_at(24, %Tank{player: player, hearts: 3, action_points: 1, range: 2})
+        |> List.replace_at(26, %Tank{
+          player: %Player{id: 2},
+          hearts: 3,
+          action_points: 2,
+          range: 2
+        })
+
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :square_occupied} = Game.move(game, player, {6, 4})
+    end
   end
 end

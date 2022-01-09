@@ -57,28 +57,34 @@ defmodule TankTurnTactics.Games.Game do
   def move(%Game{board: board} = game, %Player{} = player, {new_x, new_y} = move_to) do
     case game |> Game.location(player) do
       {:ok, {old_x, old_y}} ->
-        {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
+        case game |> Game.square(new_x, new_y) do
+          {:ok, nil} ->
+            {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
 
-        cond do
-          tank.action_points < 1 ->
-            {:error, :not_enough_action_points}
+            cond do
+              tank.action_points < 1 ->
+                {:error, :not_enough_action_points}
 
-          new_x - old_x > range ->
-            {:error, :out_of_range}
+              new_x - old_x > range ->
+                {:error, :out_of_range}
 
-          old_x - new_x > range ->
-            {:error, :out_of_range}
+              old_x - new_x > range ->
+                {:error, :out_of_range}
 
-          old_y - new_y > range ->
-            {:error, :out_of_range}
+              old_y - new_y > range ->
+                {:error, :out_of_range}
 
-          new_y - old_y > range ->
-            {:error, :out_of_range}
+              new_y - old_y > range ->
+                {:error, :out_of_range}
 
-          true ->
-            board = move_tank(board, game.width, tank, move_to)
+              true ->
+                board = move_tank(board, game.width, tank, move_to)
 
-            {:ok, %Game{game | board: board}}
+                {:ok, %Game{game | board: board}}
+            end
+
+          _ ->
+            {:error, :square_occupied}
         end
 
       error ->
