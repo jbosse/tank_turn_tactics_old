@@ -273,5 +273,17 @@ defmodule TankTurnTactics.GameTest do
 
       assert {:error, :already_dead} = Game.shoot(game, player, {6, 4})
     end
+
+    test "returns error when there is no tank to shoot" do
+      player = %Player{id: 1}
+
+      board =
+        @board_7x7
+        |> List.replace_at(24, %Tank{player: player, hearts: 3, action_points: 1, range: 2})
+
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :square_unoccupied} = Game.shoot(game, player, {6, 4})
+    end
   end
 end

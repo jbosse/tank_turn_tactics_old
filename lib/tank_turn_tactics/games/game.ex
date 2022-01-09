@@ -3,6 +3,8 @@ defmodule TankTurnTactics.Games.Game do
 
   alias __MODULE__
   alias TankTurnTactics.Games.Tank
+  alias TankTurnTactics.Games.Game.TankMover
+  alias TankTurnTactics.Games.Game.TankShooter
   alias TankTurnTactics.Players.Player
 
   def new() do
@@ -57,7 +59,9 @@ defmodule TankTurnTactics.Games.Game do
   def move(%Game{} = game, %Player{} = player, move_to) do
     game
     |> player_tank(player)
-    |> move_tank(game, move_to)
+    |> ensure_within_range(move_to)
+    |> ensure_sufficient_action_points()
+    |> TankMover.move_tank(game, move_to)
   end
 
   def shoot(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
@@ -66,71 +70,12 @@ defmodule TankTurnTactics.Games.Game do
   def shoot(%Game{} = game, %Player{} = player, target_loc) do
     game
     |> player_tank(player)
-    |> shoot_tank(game, target_loc)
+    |> ensure_within_range(target_loc)
+    |> ensure_sufficient_action_points()
+    |> TankShooter.shoot_tank(game, target_loc)
   end
 
-  defp move_tank({:error, _error} = error, _game, _move_to), do: error
-
-  defp move_tank({:ok, tank, move_from}, game, {new_x, new_y} = move_to) do
-    game
-    |> Game.square(new_x, new_y)
-    |> move_tank(game, tank, move_from, move_to)
-  end
-
-  defp move_tank({:error, _error} = error, _game, _tank, _move_from, _move_to), do: error
-
-  defp move_tank({:ok, %Tank{}}, _game, _tank, _move_from, _move_to),
-    do: {:error, :square_occupied}
-
-  defp move_tank({:ok, nil}, game, tank, move_from, move_to) do
-    cond do
-      tank.action_points < 1 -> {:error, :not_enough_action_points}
-      out_of_range(tank, move_from, move_to) -> {:error, :out_of_range}
-      true -> move_tank(game, tank, move_from, move_to)
-    end
-  end
-
-  defp move_tank(game, tank, {from_x, from_y}, {to_x, to_y}) do
-    from_index = (from_y - 1) * game.width + (from_x - 1)
-    to_index = (to_y - 1) * game.width + (to_x - 1)
-
-    tank = %Tank{tank | action_points: tank.action_points - 1}
-
-    board =
-      game.board
-      |> List.replace_at(from_index, nil)
-      |> List.replace_at(to_index, tank)
-
-    {:ok, %Game{game | board: board}}
-  end
-
-  defp shoot_tank({:error, _error} = error, _game, _target_loc), do: error
-
-  defp shoot_tank({:ok, tank, tank_loc}, game, target_loc) do
-    cond do
-      tank.action_points < 1 -> {:error, :not_enough_action_points}
-      out_of_range(tank, tank_loc, target_loc) -> {:error, :out_of_range}
-      true -> shoot_tank(game, target_loc)
-    end
-  end
-
-  defp shoot_tank(game, {x, y}) do
-    case game |> Game.square(x, y) do
-      {:ok, %Tank{} = target_tank} ->
-        cond do
-          target_tank.hearts > 0 ->
-            index = (y - 1) * game.width + (x - 1)
-            tank = %Tank{target_tank | hearts: target_tank.hearts - 1}
-            board = game.board |> List.replace_at(index, tank)
-            {:ok, %Game{game | board: board}}
-
-          true ->
-            {:error, :already_dead}
-        end
-    end
-  end
-
-  defp player_tank(game, player) do
+  def player_tank(game, player) do
     case game |> Game.location(player) do
       {:ok, {x, y} = loc} ->
         {:ok, %Tank{} = tank} = game |> Game.square(x, y)
@@ -141,13 +86,21 @@ defmodule TankTurnTactics.Games.Game do
     end
   end
 
-  defp out_of_range(tank, {x1, y1}, {x2, y2}) do
+  def ensure_within_range({:error, _error} = error, _move_to), do: error
+
+  def ensure_within_range({:ok, tank, tank_location}, target_location) do
     cond do
-      x1 - x2 > tank.range -> true
-      x2 - x1 > tank.range -> true
-      y1 - y2 > tank.range -> true
-      y2 - y1 > tank.range -> true
-      true -> false
+      Tank.out_of_range(tank, tank_location, target_location) -> {:error, :out_of_range}
+      true -> {:ok, tank, tank_location}
+    end
+  end
+
+  def ensure_sufficient_action_points({:error, _error} = error), do: error
+
+  def ensure_sufficient_action_points({:ok, tank, tank_location}) do
+    cond do
+      tank.action_points < 1 -> {:error, :not_enough_action_points}
+      true -> {:ok, tank, tank_location}
     end
   end
 end
