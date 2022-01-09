@@ -54,9 +54,9 @@ defmodule TankTurnTactics.Games.Game do
   def move(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
   def move(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
 
-  def move(%Game{board: board} = game, %Player{} = player, {new_x, new_y} = move_to) do
+  def move(%Game{} = game, %Player{} = player, {new_x, new_y} = move_to) do
     case game |> Game.location(player) do
-      {:ok, {old_x, old_y}} ->
+      {:ok, {old_x, old_y} = move_from} ->
         case game |> Game.square(new_x, new_y) do
           {:ok, nil} ->
             {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
@@ -78,9 +78,7 @@ defmodule TankTurnTactics.Games.Game do
                 {:error, :out_of_range}
 
               true ->
-                board = move_tank(board, game.width, tank, move_to)
-
-                {:ok, %Game{game | board: board}}
+                move_tank(game, tank, move_from, move_to)
             end
 
           _ ->
@@ -131,26 +129,18 @@ defmodule TankTurnTactics.Games.Game do
     end
   end
 
-  defp move_tank(board, width, tank, move_to) do
-    board
-    |> Enum.chunk_every(width)
-    |> Enum.with_index()
-    |> Enum.flat_map(fn {row, y_index} ->
-      row
-      |> Enum.with_index()
-      |> Enum.map(fn {sq, x_index} ->
-        cond do
-          move_to == {x_index + 1, y_index + 1} ->
-            %Tank{tank | action_points: tank.action_points - 1}
+  defp move_tank(game, tank, {from_x, from_y}, {to_x, to_y}) do
+    from_index = (from_y - 1) * game.width + (from_x - 1)
+    to_index = (to_y - 1) * game.width + (to_x - 1)
 
-          sq == nil ->
-            nil
+    tank = %Tank{tank | action_points: tank.action_points - 1}
 
-          sq.player == tank.player ->
-            nil
-        end
-      end)
-    end)
+    board =
+      game.board
+      |> List.replace_at(from_index, nil)
+      |> List.replace_at(to_index, tank)
+
+    {:ok, %Game{game | board: board}}
   end
 
   defp shoot_tank(game, target_tank, {x, y}) do
