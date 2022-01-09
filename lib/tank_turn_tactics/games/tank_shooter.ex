@@ -22,6 +22,9 @@ defmodule TankTurnTactics.Games.Game.TankShooter do
             target_index = (y2 - 1) * game.width + (x2 - 1)
             target_tank = %Tank{target_tank | hearts: target_tank.hearts - 1}
 
+            {player_tank, target_tank} =
+              claim_target_action_points_if_dead(player_tank, target_tank)
+
             board =
               game.board
               |> List.replace_at(target_index, target_tank)
@@ -35,6 +38,20 @@ defmodule TankTurnTactics.Games.Game.TankShooter do
 
       error ->
         error
+    end
+  end
+
+  defp claim_target_action_points_if_dead(player_tank, target_tank) do
+    if target_tank.hearts == 0 do
+      player_tank = %Tank{
+        player_tank
+        | action_points: player_tank.action_points + target_tank.action_points
+      }
+
+      target_tank = %Tank{target_tank | action_points: 0}
+      {player_tank, target_tank}
+    else
+      {player_tank, target_tank}
     end
   end
 end

@@ -215,6 +215,22 @@ defmodule TankTurnTactics.GameTest do
       assert {:ok, %Tank{player: ^player2, hearts: 2}} = game |> Game.square(1, 1)
     end
 
+    test "killing the player claims their action points" do
+      player1 = %Player{id: 1}
+      player2 = %Player{id: 2}
+      tank1 = %Tank{player: player1, hearts: 3, action_points: 1}
+      tank2 = %Tank{player: player2, hearts: 1, action_points: 1}
+      board = @board_3x3 |> List.replace_at(5, tank1) |> List.replace_at(0, tank2)
+      game = %Game{width: 3, height: 3, players: [player1], board: board}
+
+      {:ok, game} = Game.shoot(game, player1, {1, 1})
+
+      assert {:ok, %Tank{player: ^player1, action_points: 1}} = game |> Game.square(3, 2)
+
+      assert {:ok, %Tank{player: ^player2, hearts: 0, action_points: 0}} =
+               game |> Game.square(1, 1)
+    end
+
     test "returns error when the location is out of bounds" do
       player = %Player{id: 1}
       board = @board_3x3
