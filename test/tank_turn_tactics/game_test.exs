@@ -199,4 +199,79 @@ defmodule TankTurnTactics.GameTest do
       assert {:error, :square_occupied} = Game.move(game, player, {6, 4})
     end
   end
+
+  describe "shoot/2" do
+    test "shoots the player to the given location" do
+      player1 = %Player{id: 1}
+      player2 = %Player{id: 2}
+      tank1 = %Tank{player: player1, hearts: 3, action_points: 1}
+      tank2 = %Tank{player: player2, hearts: 3, action_points: 1}
+      board = @board_3x3 |> List.replace_at(5, tank1) |> List.replace_at(0, tank2)
+      game = %Game{width: 3, height: 3, players: [player1], board: board}
+
+      {:ok, game} = Game.shoot(game, player1, {1, 1})
+
+      assert {:ok, %Tank{player: ^player2, hearts: 2}} = game |> Game.square(1, 1)
+    end
+
+    test "returns error when the location is out of bounds" do
+      player = %Player{id: 1}
+      board = @board_3x3
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      assert {:error, :out_of_bounds} == Game.shoot(game, player, {4, 2})
+      assert {:error, :out_of_bounds} == Game.shoot(game, player, {2, 4})
+    end
+
+    test "returns error when the desired location is out of range" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 1, range: 2}
+      board = @board_7x7 |> List.replace_at(24, tank)
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :out_of_range} = Game.shoot(game, player, {7, 4})
+      assert {:error, :out_of_range} = Game.shoot(game, player, {1, 4})
+      assert {:error, :out_of_range} = Game.shoot(game, player, {4, 1})
+      assert {:error, :out_of_range} = Game.shoot(game, player, {4, 7})
+      assert {:error, :out_of_range} = Game.shoot(game, player, {1, 1})
+      assert {:error, :out_of_range} = Game.shoot(game, player, {7, 1})
+      assert {:error, :out_of_range} = Game.shoot(game, player, {1, 7})
+      assert {:error, :out_of_range} = Game.shoot(game, player, {7, 7})
+    end
+
+    test "returns error when the player is not on the board" do
+      player = %Player{id: 1}
+      board = @board_7x7
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :player_not_found} = Game.shoot(game, player, {6, 4})
+    end
+
+    test "returns error when the player does not have an action point to shoot" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 0, range: 2}
+      board = @board_7x7 |> List.replace_at(24, tank)
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :not_enough_action_points} = Game.shoot(game, player, {6, 4})
+    end
+
+    test "returns error when the desired tank is already dead" do
+      player = %Player{id: 1}
+
+      board =
+        @board_7x7
+        |> List.replace_at(24, %Tank{player: player, hearts: 3, action_points: 1, range: 2})
+        |> List.replace_at(26, %Tank{
+          player: %Player{id: 2},
+          hearts: 0,
+          action_points: 2,
+          range: 2
+        })
+
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :already_dead} = Game.shoot(game, player, {6, 4})
+    end
+  end
 end

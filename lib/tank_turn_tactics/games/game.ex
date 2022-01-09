@@ -92,6 +92,45 @@ defmodule TankTurnTactics.Games.Game do
     end
   end
 
+  def shoot(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
+  def shoot(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
+
+  def shoot(%Game{} = game, %Player{} = player, {new_x, new_y} = move_to) do
+    case game |> Game.location(player) do
+      {:ok, {old_x, old_y}} ->
+        {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
+
+        cond do
+          tank.action_points < 1 ->
+            {:error, :not_enough_action_points}
+
+          new_x - old_x > range ->
+            {:error, :out_of_range}
+
+          old_x - new_x > range ->
+            {:error, :out_of_range}
+
+          old_y - new_y > range ->
+            {:error, :out_of_range}
+
+          new_y - old_y > range ->
+            {:error, :out_of_range}
+
+          true ->
+            case game |> Game.square(new_x, new_y) do
+              {:ok, %Tank{} = target_tank} ->
+                cond do
+                  target_tank.hearts > 0 -> shoot_tank(game, target_tank, move_to)
+                  true -> {:error, :already_dead}
+                end
+            end
+        end
+
+      error ->
+        error
+    end
+  end
+
   defp move_tank(board, width, tank, move_to) do
     board
     |> Enum.chunk_every(width)
@@ -112,5 +151,12 @@ defmodule TankTurnTactics.Games.Game do
         end
       end)
     end)
+  end
+
+  defp shoot_tank(game, target_tank, {x, y}) do
+    index = (y - 1) * game.width + (x - 1)
+    tank = %Tank{target_tank | hearts: target_tank.hearts - 1}
+    board = game.board |> List.replace_at(index, tank)
+    {:ok, %Game{game | board: board}}
   end
 end
