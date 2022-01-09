@@ -147,4 +147,16 @@ defmodule TankTurnTactics.Games.Game do
       true -> {:ok, tank, tank_location}
     end
   end
+
+  def spawn_heart(%Game{} = game) do
+    {nil, heart_index} =
+      game.board
+      |> Enum.with_index()
+      |> Enum.filter(fn {sq, _index} -> sq == nil end)
+      |> Enum.shuffle()
+      |> Enum.at(0)
+
+    board = game.board |> List.replace_at(heart_index, :heart)
+    %Game{board: board}
+  end
 end

@@ -489,4 +489,25 @@ defmodule TankTurnTactics.GameTest do
       assert {:error, :square_unoccupied} = Game.gift_action_point(game, player, {6, 4})
     end
   end
+
+  describe "spawn_heart/1" do
+    test "spawns a heart in a random cell" do
+      player1 = %Player{id: 1}
+      player2 = %Player{id: 2}
+      tank1 = %Tank{player: player1, hearts: 3, action_points: 1}
+      tank2 = %Tank{player: player2, hearts: 3, action_points: 1}
+      board = @board_3x3 |> List.replace_at(5, tank1) |> List.replace_at(0, tank2)
+      game = %Game{width: 3, height: 3, players: [player1], board: board}
+
+      uniq_spawns =
+        1..47
+        |> Enum.map(fn _ ->
+          %Game{board: board} = game |> Game.spawn_heart()
+          board |> Enum.find_index(fn sq -> sq == :heart end)
+        end)
+        |> Enum.uniq()
+
+      assert 5 < uniq_spawns |> Enum.count()
+    end
+  end
 end
