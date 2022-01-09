@@ -55,30 +55,14 @@ defmodule TankTurnTactics.Games.Game do
   def move(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
 
   def move(%Game{} = game, %Player{} = player, {new_x, new_y} = move_to) do
-    case game |> Game.location(player) do
-      {:ok, {old_x, old_y} = move_from} ->
+    case game |> player_tank(player) do
+      {:ok, tank, move_from} ->
         case game |> Game.square(new_x, new_y) do
           {:ok, nil} ->
-            {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
-
             cond do
-              tank.action_points < 1 ->
-                {:error, :not_enough_action_points}
-
-              new_x - old_x > range ->
-                {:error, :out_of_range}
-
-              old_x - new_x > range ->
-                {:error, :out_of_range}
-
-              old_y - new_y > range ->
-                {:error, :out_of_range}
-
-              new_y - old_y > range ->
-                {:error, :out_of_range}
-
-              true ->
-                move_tank(game, tank, move_from, move_to)
+              tank.action_points < 1 -> {:error, :not_enough_action_points}
+              out_of_range(tank, move_from, move_to) -> {:error, :out_of_range}
+              true -> move_tank(game, tank, move_from, move_to)
             end
 
           _ ->
@@ -93,35 +77,13 @@ defmodule TankTurnTactics.Games.Game do
   def shoot(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
   def shoot(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
 
-  def shoot(%Game{} = game, %Player{} = player, {new_x, new_y} = move_to) do
-    case game |> Game.location(player) do
-      {:ok, {old_x, old_y}} ->
-        {:ok, %Tank{range: range} = tank} = game |> Game.square(old_x, old_y)
-
+  def shoot(%Game{} = game, %Player{} = player, target_loc) do
+    case game |> player_tank(player) do
+      {:ok, tank, tank_loc} ->
         cond do
-          tank.action_points < 1 ->
-            {:error, :not_enough_action_points}
-
-          new_x - old_x > range ->
-            {:error, :out_of_range}
-
-          old_x - new_x > range ->
-            {:error, :out_of_range}
-
-          old_y - new_y > range ->
-            {:error, :out_of_range}
-
-          new_y - old_y > range ->
-            {:error, :out_of_range}
-
-          true ->
-            case game |> Game.square(new_x, new_y) do
-              {:ok, %Tank{} = target_tank} ->
-                cond do
-                  target_tank.hearts > 0 -> shoot_tank(game, target_tank, move_to)
-                  true -> {:error, :already_dead}
-                end
-            end
+          tank.action_points < 1 -> {:error, :not_enough_action_points}
+          out_of_range(tank, tank_loc, target_loc) -> {:error, :out_of_range}
+          true -> shoot_tank(game, target_loc)
         end
 
       error ->
@@ -143,10 +105,40 @@ defmodule TankTurnTactics.Games.Game do
     {:ok, %Game{game | board: board}}
   end
 
-  defp shoot_tank(game, target_tank, {x, y}) do
-    index = (y - 1) * game.width + (x - 1)
-    tank = %Tank{target_tank | hearts: target_tank.hearts - 1}
-    board = game.board |> List.replace_at(index, tank)
-    {:ok, %Game{game | board: board}}
+  defp shoot_tank(game, {x, y}) do
+    case game |> Game.square(x, y) do
+      {:ok, %Tank{} = target_tank} ->
+        cond do
+          target_tank.hearts > 0 ->
+            index = (y - 1) * game.width + (x - 1)
+            tank = %Tank{target_tank | hearts: target_tank.hearts - 1}
+            board = game.board |> List.replace_at(index, tank)
+            {:ok, %Game{game | board: board}}
+
+          true ->
+            {:error, :already_dead}
+        end
+    end
+  end
+
+  defp player_tank(game, player) do
+    case game |> Game.location(player) do
+      {:ok, {x, y} = loc} ->
+        {:ok, %Tank{} = tank} = game |> Game.square(x, y)
+        {:ok, tank, loc}
+
+      error ->
+        error
+    end
+  end
+
+  defp out_of_range(tank, {x1, y1}, {x2, y2}) do
+    cond do
+      x1 - x2 > tank.range -> true
+      x2 - x1 > tank.range -> true
+      y1 - y2 > tank.range -> true
+      y2 - y1 > tank.range -> true
+      true -> false
+    end
   end
 end
