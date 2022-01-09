@@ -286,4 +286,35 @@ defmodule TankTurnTactics.GameTest do
       assert {:error, :square_unoccupied} = Game.shoot(game, player, {6, 4})
     end
   end
+
+  describe "add_health/2" do
+    test "adds health to the player's tank'" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 3}
+      board = @board_3x3 |> List.replace_at(5, tank)
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      {:ok, game} = Game.add_health(game, player)
+
+      assert {:ok, %Tank{player: ^player, hearts: 4, action_points: 0}} =
+               game |> Game.square(3, 2)
+    end
+
+    test "returns error when the player does not have an action points" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 2}
+      board = @board_3x3 |> List.replace_at(5, tank)
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      assert {:error, :not_enough_action_points} = Game.add_health(game, player)
+    end
+
+    test "returns error when the player is not on the board" do
+      player = %Player{id: 1}
+      board = @board_7x7
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :player_not_found} = Game.add_health(game, player)
+    end
+  end
 end

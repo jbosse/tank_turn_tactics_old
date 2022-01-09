@@ -5,6 +5,7 @@ defmodule TankTurnTactics.Games.Game do
   alias TankTurnTactics.Games.Tank
   alias TankTurnTactics.Games.Game.TankMover
   alias TankTurnTactics.Games.Game.TankShooter
+  alias TankTurnTactics.Games.Game.HealthAdder
   alias TankTurnTactics.Players.Player
 
   def new() do
@@ -60,7 +61,7 @@ defmodule TankTurnTactics.Games.Game do
     game
     |> player_tank(player)
     |> ensure_within_range(move_to)
-    |> ensure_sufficient_action_points()
+    |> ensure_sufficient_action_points(1)
     |> TankMover.move_tank(game, move_to)
   end
 
@@ -71,8 +72,15 @@ defmodule TankTurnTactics.Games.Game do
     game
     |> player_tank(player)
     |> ensure_within_range(target_loc)
-    |> ensure_sufficient_action_points()
+    |> ensure_sufficient_action_points(1)
     |> TankShooter.shoot_tank(game, target_loc)
+  end
+
+  def add_health(%Game{} = game, %Player{} = player) do
+    game
+    |> player_tank(player)
+    |> ensure_sufficient_action_points(3)
+    |> HealthAdder.add_health(game)
   end
 
   def player_tank(game, player) do
@@ -95,11 +103,11 @@ defmodule TankTurnTactics.Games.Game do
     end
   end
 
-  def ensure_sufficient_action_points({:error, _error} = error), do: error
+  def ensure_sufficient_action_points({:error, _error} = error, _points), do: error
 
-  def ensure_sufficient_action_points({:ok, tank, tank_location}) do
+  def ensure_sufficient_action_points({:ok, tank, tank_location}, points) do
     cond do
-      tank.action_points < 1 -> {:error, :not_enough_action_points}
+      tank.action_points < points -> {:error, :not_enough_action_points}
       true -> {:ok, tank, tank_location}
     end
   end
