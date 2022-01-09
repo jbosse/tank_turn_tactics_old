@@ -211,6 +211,7 @@ defmodule TankTurnTactics.GameTest do
 
       {:ok, game} = Game.shoot(game, player1, {1, 1})
 
+      assert {:ok, %Tank{player: ^player1, action_points: 0}} = game |> Game.square(3, 2)
       assert {:ok, %Tank{player: ^player2, hearts: 2}} = game |> Game.square(1, 1)
     end
 
@@ -315,6 +316,161 @@ defmodule TankTurnTactics.GameTest do
       game = %Game{width: 7, height: 7, players: [player], board: board}
 
       assert {:error, :player_not_found} = Game.add_health(game, player)
+    end
+  end
+
+  describe "add_range/2" do
+    test "adds range to the player's tank'" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, range: 1, action_points: 3}
+      board = @board_3x3 |> List.replace_at(5, tank)
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      {:ok, game} = Game.add_range(game, player)
+
+      assert {:ok, %Tank{player: ^player, range: 2, action_points: 0}} = game |> Game.square(3, 2)
+    end
+
+    test "returns error when the player does not have an action points" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, action_points: 2}
+      board = @board_3x3 |> List.replace_at(5, tank)
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      assert {:error, :not_enough_action_points} = Game.add_range(game, player)
+    end
+
+    test "returns error when the player is not on the board" do
+      player = %Player{id: 1}
+      board = @board_7x7
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :player_not_found} = Game.add_range(game, player)
+    end
+  end
+
+  describe "gift_heart/2" do
+    test "gives heart the player to the given location" do
+      player1 = %Player{id: 1}
+      player2 = %Player{id: 2}
+      tank1 = %Tank{player: player1, hearts: 3, action_points: 1}
+      tank2 = %Tank{player: player2, hearts: 3, action_points: 1}
+      board = @board_3x3 |> List.replace_at(5, tank1) |> List.replace_at(0, tank2)
+      game = %Game{width: 3, height: 3, players: [player1], board: board}
+
+      {:ok, game} = Game.gift_heart(game, player1, {1, 1})
+
+      assert {:ok, %Tank{player: ^player1, hearts: 2, action_points: 1}} =
+               game |> Game.square(3, 2)
+
+      assert {:ok, %Tank{player: ^player2, hearts: 4}} = game |> Game.square(1, 1)
+    end
+
+    test "returns error when the location is out of bounds" do
+      player = %Player{id: 1}
+      board = @board_3x3
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      assert {:error, :out_of_bounds} == Game.gift_heart(game, player, {4, 2})
+      assert {:error, :out_of_bounds} == Game.gift_heart(game, player, {2, 4})
+    end
+
+    test "returns error when the desired location is out of range" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 1, range: 2}
+      board = @board_7x7 |> List.replace_at(24, tank)
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :out_of_range} = Game.gift_heart(game, player, {7, 4})
+      assert {:error, :out_of_range} = Game.gift_heart(game, player, {1, 4})
+      assert {:error, :out_of_range} = Game.gift_heart(game, player, {4, 1})
+      assert {:error, :out_of_range} = Game.gift_heart(game, player, {4, 7})
+      assert {:error, :out_of_range} = Game.gift_heart(game, player, {1, 1})
+      assert {:error, :out_of_range} = Game.gift_heart(game, player, {7, 1})
+      assert {:error, :out_of_range} = Game.gift_heart(game, player, {1, 7})
+      assert {:error, :out_of_range} = Game.gift_heart(game, player, {7, 7})
+    end
+
+    test "returns error when the player is not on the board" do
+      player = %Player{id: 1}
+      board = @board_7x7
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :player_not_found} = Game.gift_heart(game, player, {6, 4})
+    end
+
+    test "returns error when there is no tank to gift" do
+      player = %Player{id: 1}
+
+      board =
+        @board_7x7
+        |> List.replace_at(24, %Tank{player: player, hearts: 3, action_points: 1, range: 2})
+
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :square_unoccupied} = Game.gift_heart(game, player, {6, 4})
+    end
+  end
+
+  describe "gift_action_point/2" do
+    test "gives action_point the player to the given location" do
+      player1 = %Player{id: 1}
+      player2 = %Player{id: 2}
+      tank1 = %Tank{player: player1, hearts: 3, action_points: 1}
+      tank2 = %Tank{player: player2, hearts: 3, action_points: 1}
+      board = @board_3x3 |> List.replace_at(5, tank1) |> List.replace_at(0, tank2)
+      game = %Game{width: 3, height: 3, players: [player1], board: board}
+
+      {:ok, game} = Game.gift_action_point(game, player1, {1, 1})
+
+      assert {:ok, %Tank{player: ^player1, action_points: 0}} = game |> Game.square(3, 2)
+
+      assert {:ok, %Tank{player: ^player2, action_points: 2}} = game |> Game.square(1, 1)
+    end
+
+    test "returns error when the location is out of bounds" do
+      player = %Player{id: 1}
+      board = @board_3x3
+      game = %Game{width: 3, height: 3, players: [player], board: board}
+
+      assert {:error, :out_of_bounds} == Game.gift_action_point(game, player, {4, 2})
+      assert {:error, :out_of_bounds} == Game.gift_action_point(game, player, {2, 4})
+    end
+
+    test "returns error when the desired location is out of range" do
+      player = %Player{id: 1}
+      tank = %Tank{player: player, hearts: 3, action_points: 1, range: 2}
+      board = @board_7x7 |> List.replace_at(24, tank)
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :out_of_range} = Game.gift_action_point(game, player, {7, 4})
+      assert {:error, :out_of_range} = Game.gift_action_point(game, player, {1, 4})
+      assert {:error, :out_of_range} = Game.gift_action_point(game, player, {4, 1})
+      assert {:error, :out_of_range} = Game.gift_action_point(game, player, {4, 7})
+      assert {:error, :out_of_range} = Game.gift_action_point(game, player, {1, 1})
+      assert {:error, :out_of_range} = Game.gift_action_point(game, player, {7, 1})
+      assert {:error, :out_of_range} = Game.gift_action_point(game, player, {1, 7})
+      assert {:error, :out_of_range} = Game.gift_action_point(game, player, {7, 7})
+    end
+
+    test "returns error when the player is not on the board" do
+      player = %Player{id: 1}
+      board = @board_7x7
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :player_not_found} = Game.gift_action_point(game, player, {6, 4})
+    end
+
+    test "returns error when there is no tank to gift" do
+      player = %Player{id: 1}
+
+      board =
+        @board_7x7
+        |> List.replace_at(24, %Tank{player: player, hearts: 3, action_points: 1, range: 2})
+
+      game = %Game{width: 7, height: 7, players: [player], board: board}
+
+      assert {:error, :square_unoccupied} = Game.gift_action_point(game, player, {6, 4})
     end
   end
 end

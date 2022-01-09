@@ -6,6 +6,9 @@ defmodule TankTurnTactics.Games.Game do
   alias TankTurnTactics.Games.Game.TankMover
   alias TankTurnTactics.Games.Game.TankShooter
   alias TankTurnTactics.Games.Game.HealthAdder
+  alias TankTurnTactics.Games.Game.RangeAdder
+  alias TankTurnTactics.Games.Game.HeartGifter
+  alias TankTurnTactics.Games.Game.ActionPointGifter
   alias TankTurnTactics.Players.Player
 
   def new() do
@@ -81,6 +84,39 @@ defmodule TankTurnTactics.Games.Game do
     |> player_tank(player)
     |> ensure_sufficient_action_points(3)
     |> HealthAdder.add_health(game)
+  end
+
+  def add_range(%Game{} = game, %Player{} = player) do
+    game
+    |> player_tank(player)
+    |> ensure_sufficient_action_points(3)
+    |> RangeAdder.add_range(game)
+  end
+
+  def gift_heart(%Game{} = game, %Player{}, {x, _y}) when x > game.width,
+    do: {:error, :out_of_bounds}
+
+  def gift_heart(%Game{} = game, %Player{}, {_x, y}) when y > game.height,
+    do: {:error, :out_of_bounds}
+
+  def gift_heart(%Game{} = game, %Player{} = player, target_loc) do
+    game
+    |> player_tank(player)
+    |> ensure_within_range(target_loc)
+    |> HeartGifter.gift(game, target_loc)
+  end
+
+  def gift_action_point(%Game{} = game, %Player{}, {x, _y}) when x > game.width,
+    do: {:error, :out_of_bounds}
+
+  def gift_action_point(%Game{} = game, %Player{}, {_x, y}) when y > game.height,
+    do: {:error, :out_of_bounds}
+
+  def gift_action_point(%Game{} = game, %Player{} = player, target_loc) do
+    game
+    |> player_tank(player)
+    |> ensure_within_range(target_loc)
+    |> ActionPointGifter.gift(game, target_loc)
   end
 
   def player_tank(game, player) do
