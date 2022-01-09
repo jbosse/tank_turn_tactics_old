@@ -54,40 +54,39 @@ defmodule TankTurnTactics.Games.Game do
   def move(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
   def move(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
 
-  def move(%Game{} = game, %Player{} = player, {new_x, new_y} = move_to) do
-    case game |> player_tank(player) do
-      {:ok, tank, move_from} ->
-        case game |> Game.square(new_x, new_y) do
-          {:ok, nil} ->
-            cond do
-              tank.action_points < 1 -> {:error, :not_enough_action_points}
-              out_of_range(tank, move_from, move_to) -> {:error, :out_of_range}
-              true -> move_tank(game, tank, move_from, move_to)
-            end
-
-          _ ->
-            {:error, :square_occupied}
-        end
-
-      error ->
-        error
-    end
+  def move(%Game{} = game, %Player{} = player, move_to) do
+    game
+    |> player_tank(player)
+    |> move_tank(game, move_to)
   end
 
   def shoot(%Game{} = game, %Player{}, {x, _y}) when x > game.width, do: {:error, :out_of_bounds}
   def shoot(%Game{} = game, %Player{}, {_x, y}) when y > game.height, do: {:error, :out_of_bounds}
 
   def shoot(%Game{} = game, %Player{} = player, target_loc) do
-    case game |> player_tank(player) do
-      {:ok, tank, tank_loc} ->
-        cond do
-          tank.action_points < 1 -> {:error, :not_enough_action_points}
-          out_of_range(tank, tank_loc, target_loc) -> {:error, :out_of_range}
-          true -> shoot_tank(game, target_loc)
-        end
+    game
+    |> player_tank(player)
+    |> shoot_tank(game, target_loc)
+  end
 
-      error ->
-        error
+  defp move_tank({:error, _error} = error, _game, _move_to), do: error
+
+  defp move_tank({:ok, tank, move_from}, game, {new_x, new_y} = move_to) do
+    game
+    |> Game.square(new_x, new_y)
+    |> move_tank(game, tank, move_from, move_to)
+  end
+
+  defp move_tank({:error, _error} = error, _game, _tank, _move_from, _move_to), do: error
+
+  defp move_tank({:ok, %Tank{}}, _game, _tank, _move_from, _move_to),
+    do: {:error, :square_occupied}
+
+  defp move_tank({:ok, nil}, game, tank, move_from, move_to) do
+    cond do
+      tank.action_points < 1 -> {:error, :not_enough_action_points}
+      out_of_range(tank, move_from, move_to) -> {:error, :out_of_range}
+      true -> move_tank(game, tank, move_from, move_to)
     end
   end
 
@@ -103,6 +102,16 @@ defmodule TankTurnTactics.Games.Game do
       |> List.replace_at(to_index, tank)
 
     {:ok, %Game{game | board: board}}
+  end
+
+  defp shoot_tank({:error, _error} = error, _game, _target_loc), do: error
+
+  defp shoot_tank({:ok, tank, tank_loc}, game, target_loc) do
+    cond do
+      tank.action_points < 1 -> {:error, :not_enough_action_points}
+      out_of_range(tank, tank_loc, target_loc) -> {:error, :out_of_range}
+      true -> shoot_tank(game, target_loc)
+    end
   end
 
   defp shoot_tank(game, {x, y}) do
