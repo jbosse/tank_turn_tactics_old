@@ -9,11 +9,15 @@ defmodule TankTurnTactics.Games.Game.TankMover do
       {:ok, %Tank{}} ->
         {:error, :square_occupied}
 
-      {:ok, nil} ->
+      {:ok, cell} ->
         from_index = (from_y - 1) * game.width + (from_x - 1)
         to_index = (to_y - 1) * game.width + (to_x - 1)
 
-        tank = %Tank{tank | action_points: tank.action_points - 1}
+        tank =
+          case cell do
+            :heart -> %Tank{tank | hearts: tank.hearts + 1, action_points: tank.action_points - 1}
+            nil -> %Tank{tank | action_points: tank.action_points - 1}
+          end
 
         board =
           game.board

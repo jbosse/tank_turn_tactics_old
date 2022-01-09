@@ -40,7 +40,8 @@ defmodule TankTurnTactics.Games.Game do
       |> Enum.chunk_every(game.width)
       |> Enum.with_index()
       |> Enum.reduce({0, 0}, fn {row, y_index}, acc ->
-        case row |> Enum.find_index(fn sq -> sq != nil && sq.player == player end) do
+        case row
+             |> Enum.find_index(fn sq -> sq != nil && sq != :heart && sq.player == player end) do
           nil -> acc
           x_index -> {x_index + 1, y_index + 1}
         end
