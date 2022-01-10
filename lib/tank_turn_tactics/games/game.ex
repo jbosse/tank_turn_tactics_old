@@ -160,4 +160,20 @@ defmodule TankTurnTactics.Games.Game do
     board = game.board |> List.replace_at(heart_index, :heart)
     %Game{board: board}
   end
+
+  def distribute_action_points(game) do
+    board =
+      game.board
+      |> Enum.map(fn sq ->
+        case sq do
+          %Tank{} = tank ->
+            %Tank{tank | action_points: tank.action_points + 1}
+
+          _ ->
+            sq
+        end
+      end)
+
+    %Game{game | board: board}
+  end
 end

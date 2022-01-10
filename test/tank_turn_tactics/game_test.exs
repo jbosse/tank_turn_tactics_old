@@ -522,4 +522,20 @@ defmodule TankTurnTactics.GameTest do
       assert 5 < uniq_spawns |> Enum.count()
     end
   end
+
+  describe "distribute_action_points/1" do
+    test "distributes action points to all tanks" do
+      player1 = %Player{id: 1}
+      player2 = %Player{id: 2}
+      tank1 = %Tank{player: player1, hearts: 3, action_points: 1}
+      tank2 = %Tank{player: player2, hearts: 3, action_points: 2}
+      board = @board_3x3 |> List.replace_at(5, tank1) |> List.replace_at(0, tank2)
+      game = %Game{width: 3, height: 3, players: [player1], board: board}
+
+      game = Game.distribute_action_points(game)
+
+      assert {:ok, %Tank{player: ^player1, action_points: 2}} = game |> Game.square(3, 2)
+      assert {:ok, %Tank{player: ^player2, action_points: 3}} = game |> Game.square(1, 1)
+    end
+  end
 end
