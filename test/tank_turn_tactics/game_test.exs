@@ -6,6 +6,7 @@ defmodule TankTurnTactics.GameTest do
   alias TankTurnTactics.Players.Player
 
   @board_3x3 1..9 |> Enum.to_list() |> Enum.map(fn _ -> nil end)
+  @board_5x5 1..25 |> Enum.to_list() |> Enum.map(fn _ -> nil end)
   @board_7x7 1..49 |> Enum.to_list() |> Enum.map(fn _ -> nil end)
 
   describe "new/0" do
@@ -537,5 +538,141 @@ defmodule TankTurnTactics.GameTest do
       assert {:ok, %Tank{player: ^player1, action_points: 2}} = game |> Game.square(3, 2)
       assert {:ok, %Tank{player: ^player2, action_points: 3}} = game |> Game.square(1, 1)
     end
+  end
+
+  describe "display/1" do
+    test "displays the board" do
+      player1 = %Player{id: 1}
+      player2 = %Player{id: 2}
+      tank1 = %Tank{player: player1, hearts: 3, action_points: 1}
+      tank2 = %Tank{player: player2, hearts: 3, action_points: 2}
+
+      board =
+        @board_3x3
+        |> List.replace_at(4, tank1)
+        |> List.replace_at(0, tank2)
+        |> List.replace_at(5, :heart)
+
+      game = %Game{width: 3, height: 3, players: [player1], board: board}
+
+      expected = """
+         |    A    |    B    |    C    |
+      ---|---------|---------|---------|
+         |Player 2 |         |         |
+       1 |H: 3     |         |         |
+         |AP: 2    |         |         |
+      ---|---------|---------|---------|
+         |         |Player 1 |         |
+       2 |         |H: 3     |    H    |
+         |         |AP: 1    |         |
+      ---|---------|---------|---------|
+         |         |         |         |
+       3 |         |         |         |
+         |         |         |         |
+      ---|---------|---------|---------|
+      """
+
+      assert expected == Game.display(game)
+    end
+  end
+
+  describe "get_options" do
+    player1 = %Player{id: 1}
+    player2 = %Player{id: 2}
+    player3 = %Player{id: 3}
+    player4 = %Player{id: 4}
+    player5 = %Player{id: 5}
+    player6 = %Player{id: 6}
+    tank1 = %Tank{player: player1, hearts: 3, action_points: 1, range: 2}
+    tank2 = %Tank{player: player2, hearts: 0, action_points: 0, range: 2}
+    tank3 = %Tank{player: player3, hearts: 0, action_points: 0, range: 2}
+    tank4 = %Tank{player: player4, hearts: 1, action_points: 4, range: 2}
+    tank5 = %Tank{player: player5, hearts: 2, action_points: 2, range: 2}
+    tank6 = %Tank{player: player6, hearts: 2, action_points: 0, range: 3}
+
+    board =
+      @board_5x5
+      |> List.replace_at(0, tank1)
+      |> List.replace_at(8, tank2)
+      |> List.replace_at(10, tank3)
+      |> List.replace_at(12, tank4)
+      |> List.replace_at(20, tank5)
+      |> List.replace_at(22, tank6)
+
+    game = %Game{width: 5, height: 5, board: board}
+
+    assert %{
+             move: [{2, 1}, {3, 1}, {1, 2}, {2, 2}, {3, 2}, {2, 3}],
+             shoot: [{3, 3}],
+             add_health: false,
+             add_range: false,
+             gift_heart: [{1, 3}, {3, 3}],
+             gift_action_point: [{3, 3}]
+           } == Game.get_options(game, player1)
+
+    assert %{
+             move: [],
+             shoot: [],
+             add_health: false,
+             add_range: false,
+             gift_heart: [],
+             gift_action_point: []
+           } == Game.get_options(game, player2)
+
+    assert %{
+             move: [],
+             shoot: [],
+             add_health: false,
+             add_range: false,
+             gift_heart: [],
+             gift_action_point: []
+           } == Game.get_options(game, player3)
+
+    assert %{
+             move: [
+               {2, 1},
+               {3, 1},
+               {4, 1},
+               {5, 1},
+               {1, 2},
+               {2, 2},
+               {3, 2},
+               {5, 2},
+               {2, 3},
+               {4, 3},
+               {5, 3},
+               {1, 4},
+               {2, 4},
+               {3, 4},
+               {4, 4},
+               {5, 4},
+               {2, 5},
+               {4, 5},
+               {5, 5}
+             ],
+             shoot: [{1, 1}, {1, 5}, {3, 5}],
+             add_health: true,
+             add_range: true,
+             gift_heart: [{1, 1}, {4, 2}, {1, 3}, {1, 5}, {3, 5}],
+             gift_action_point: [{1, 1}, {1, 5}, {3, 5}]
+           } == Game.get_options(game, player4)
+
+    assert %{
+             move: [{2, 3}, {1, 4}, {2, 4}, {3, 4}, {2, 5}],
+             shoot: [{3, 3}, {3, 5}],
+             add_health: false,
+             add_range: false,
+             gift_heart: [{1, 3}, {3, 3}, {3, 5}],
+             gift_action_point: [{3, 3}, {3, 5}]
+           } == Game.get_options(game, player5)
+
+    assert %{
+             move: [],
+             shoot: [],
+             add_health: false,
+             add_range: false,
+             gift_heart: [{4, 2}, {1, 3}, {3, 3}, {1, 5}],
+             gift_action_point: []
+           } == Game.get_options(game, player6)
   end
 end
