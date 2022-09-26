@@ -174,7 +174,7 @@ defmodule TankTurnTactics.PlayersTest do
     end
   end
 
-  describe "deliver_update_email_instructions/3" do
+  describe "deliver_player_update_email_instructions/3" do
     setup do
       %{player: player_fixture()}
     end
@@ -182,7 +182,7 @@ defmodule TankTurnTactics.PlayersTest do
     test "sends token through notification", %{player: player} do
       token =
         extract_player_token(fn url ->
-          Players.deliver_update_email_instructions(player, "current@example.com", url)
+          Players.deliver_player_update_email_instructions(player, "current@example.com", url)
         end)
 
       {:ok, token} = Base.url_decode64(token, padding: false)
@@ -200,7 +200,7 @@ defmodule TankTurnTactics.PlayersTest do
 
       token =
         extract_player_token(fn url ->
-          Players.deliver_update_email_instructions(%{player | email: email}, player.email, url)
+          Players.deliver_player_update_email_instructions(%{player | email: email}, player.email, url)
         end)
 
       %{player: player, token: token, email: email}
@@ -353,11 +353,11 @@ defmodule TankTurnTactics.PlayersTest do
     end
   end
 
-  describe "delete_session_token/1" do
+  describe "delete_player_session_token/1" do
     test "deletes the token" do
       player = player_fixture()
       token = Players.generate_player_session_token(player)
-      assert Players.delete_session_token(token) == :ok
+      assert Players.delete_player_session_token(token) == :ok
       refute Players.get_player_by_session_token(token)
     end
   end
@@ -500,7 +500,7 @@ defmodule TankTurnTactics.PlayersTest do
     end
   end
 
-  describe "inspect/2" do
+  describe "inspect/2 for the Player module" do
     test "does not include password" do
       refute inspect(%Player{password: "123456"}) =~ "password: \"123456\""
     end

@@ -21,14 +21,14 @@ config :tank_turn_tactics, TankTurnTactics.Repo,
 # you can enable the server option below.
 config :tank_turn_tactics, TankTurnTacticsWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "s4RJgLKmMHS+6Hy2hgJm3oqWCr0HVWUlmQvaQoXbcAzjbm1IAjE8Kaii6jgCEysz",
+  secret_key_base: "V5f76yxNFiIW7qYatMv2ujCLWSw6hINj3YqlbXlajKxbjXjP0GjvlmSXqqI89BA5",
   server: false
 
 # In test we don't send emails.
 config :tank_turn_tactics, TankTurnTactics.Mailer, adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime

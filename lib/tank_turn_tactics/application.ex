@@ -8,10 +8,10 @@ defmodule TankTurnTactics.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Start the Ecto repository
-      TankTurnTactics.Repo,
       # Start the Telemetry supervisor
       TankTurnTacticsWeb.Telemetry,
+      # Start the Ecto repository
+      TankTurnTactics.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: TankTurnTactics.PubSub},
       # Start the Endpoint (http/https)

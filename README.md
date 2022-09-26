@@ -21,7 +21,7 @@ https://youtu.be/t9WMNuyjm4w
 * Dead players form a jury. Each day they vote, and whoever receives most votes will be haunted and not receive any AP that day.
 * Once a day at a random time, a heart will spawn on the field. The first player to move in the square containing the heart will receive an additional heart.
 * The game ends when a clear 1st 2nd and 3rd place can be determined. Once there are 4 players left we will see if they can agree on the placing.
-* Action points are secret. Probably a good idea to try and hid how many you have.
+* Action points are secret. Probably a good idea to try and hide how many you have.
 * You can’t win this game without making some friends and stabbing some backs. Probably.
 
 # Development
