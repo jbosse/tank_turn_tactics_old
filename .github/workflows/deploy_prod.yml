@@ -1,0 +1,70 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    container:
+      image: elixir:1.14
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install Dependencies
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+          mix deps.get
+
+      - name: Run Tests
+        env:
+          DB_HOST: postgres
+          DB_PORT: 5432
+          MIX_ENV: test
+        run: |
+          mix ecto.create
+          mix ecto.migrate
+          mix test
+
+      - name: Push to dokku
+        uses: dokku/github-action@master
+        with:
+          git_remote_url: 'ssh://dokku@${{ secrets.DOKKU_HOST }}:${{ secrets.DOKKU_PORT }}/${{ secrets.DOKKU_PROD_APP_NAME }}'
+          ssh_private_key: ${{ secrets.DOKKU_SSH_PRIVATE_KEY }}
+          branch: main
+
+      - name: Calculate Tag
+        id: tag_version_dry_run
+        uses: mathieudutour/github-tag-action@v5.5
+        with:
+          dry_run: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update version on dokku
+        run: |
+          mkdir -p "$HOME/.ssh"
+          touch "$HOME/.ssh/known_hosts"
+          echo "${{ secrets.DOKKU_SSH_PRIVATE_KEY }}" > "$HOME/.ssh/id_rsa"
+          chmod 600 "$HOME/.ssh/id_rsa"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          chmod 700 "$HOME/.ssh"
+          eval $(ssh-agent)
+          ssh-add "$HOME/.ssh/id_rsa"
+          ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ssh://dokku@${{ secrets.DOKKU_HOST }}:${{ secrets.DOKKU_PORT }} config:set --no-restart ${{ secrets.DOKKU_PROD_APP_NAME }} VERSION=${{steps.tag_version_dry_run.outputs.new_tag}}
