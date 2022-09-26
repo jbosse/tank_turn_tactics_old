@@ -51,7 +51,7 @@ jobs:
           branch: main
 
       - name: Calculate Tag
-        id: tag_version_dry_run
+        id: tag_version
         uses: mathieudutour/github-tag-action@v6.0
         with:
           dry_run: false
@@ -74,4 +74,4 @@ jobs:
           chmod 700 "$HOME/.ssh"
           eval $(ssh-agent)
           ssh-add "$HOME/.ssh/id_rsa"
-          ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ssh://dokku@${{ secrets.DOKKU_HOST }}:${{ secrets.DOKKU_PORT }} config:set --no-restart ${{ secrets.DOKKU_PREVIEW_APP_NAME }} VERSION=${{steps.tag_version_dry_run.outputs.new_tag}}.${{ steps.extract_sha.outputs.sha_short }}
+          ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ssh://dokku@${{ secrets.DOKKU_HOST }}:${{ secrets.DOKKU_PORT }} config:set --no-restart ${{ secrets.DOKKU_PREVIEW_APP_NAME }} VERSION=${{steps.tag_version.outputs.new_tag}}.${{ steps.extract_sha.outputs.sha_short }}
