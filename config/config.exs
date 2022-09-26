@@ -26,6 +26,9 @@ config :tank_turn_tactics, TankTurnTacticsWeb.Endpoint,
 # at the `config/runtime.exs`.
 config :tank_turn_tactics, TankTurnTactics.Mailer, adapter: Swoosh.Adapters.Local
 
+# Swoosh API client is needed for adapters other than SMTP.
+config :swoosh, :api_client, false
+
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.14.41",
