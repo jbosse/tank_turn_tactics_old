@@ -4,8 +4,9 @@ import Config
 config :tank_turn_tactics, TankTurnTactics.Repo,
   username: "postgres",
   password: "postgres",
-  database: "tank_turn_tactics_dev",
   hostname: "localhost",
+  database: "tank_turn_tactics_dev",
+  stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
@@ -22,10 +23,11 @@ config :tank_turn_tactics, TankTurnTacticsWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "/NkaBDDoLpDDr7lrevtMPSPZNTXg8T5yPV7A98zEgcqja5u9Uns7s5mig/d4Q1jI",
+  secret_key_base: "LaQ4xJrVHZrS9FbnNCiUuh0OYdSmEdqwsrPEQO91BY5SBtJMuGzdFBplnH6IAzto",
   watchers: [
     # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
-    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]}
+    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
 # ## SSL Support
@@ -63,6 +65,9 @@ config :tank_turn_tactics, TankTurnTacticsWeb.Endpoint,
     ]
   ]
 
+# Enable dev routes for dashboard and mailbox
+config :tank_turn_tactics, dev_routes: true
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
 
@@ -72,3 +77,6 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Disable swoosh api client as it is only required for production adapters.
+config :swoosh, :api_client, false

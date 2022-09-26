@@ -1,6 +1,7 @@
 defmodule TankTurnTacticsWeb.PlayerAuthTest do
   use TankTurnTacticsWeb.ConnCase, async: true
 
+  alias Phoenix.LiveView
   alias TankTurnTactics.Players
   alias TankTurnTacticsWeb.PlayerAuth
   import TankTurnTactics.PlayersFixtures
@@ -21,7 +22,7 @@ defmodule TankTurnTacticsWeb.PlayerAuthTest do
       conn = PlayerAuth.log_in_player(conn, player)
       assert token = get_session(conn, :player_token)
       assert get_session(conn, :live_socket_id) == "players_sessions:#{Base.url_encode64(token)}"
-      assert redirected_to(conn) == "/"
+      assert redirected_to(conn) == ~p"/"
       assert Players.get_player_by_session_token(token)
     end
 
@@ -59,7 +60,7 @@ defmodule TankTurnTacticsWeb.PlayerAuthTest do
       refute get_session(conn, :player_token)
       refute conn.cookies[@remember_me_cookie]
       assert %{max_age: 0} = conn.resp_cookies[@remember_me_cookie]
-      assert redirected_to(conn) == "/"
+      assert redirected_to(conn) == ~p"/"
       refute Players.get_player_by_session_token(player_token)
     end
 
@@ -78,7 +79,7 @@ defmodule TankTurnTacticsWeb.PlayerAuthTest do
       conn = conn |> fetch_cookies() |> PlayerAuth.log_out_player()
       refute get_session(conn, :player_token)
       assert %{max_age: 0} = conn.resp_cookies[@remember_me_cookie]
-      assert redirected_to(conn) == "/"
+      assert redirected_to(conn) == ~p"/"
     end
   end
 
@@ -101,8 +102,11 @@ defmodule TankTurnTacticsWeb.PlayerAuthTest do
         |> put_req_cookie(@remember_me_cookie, signed_token)
         |> PlayerAuth.fetch_current_player([])
 
-      assert get_session(conn, :player_token) == player_token
       assert conn.assigns.current_player.id == player.id
+      assert get_session(conn, :player_token) == player_token
+
+      assert get_session(conn, :live_socket_id) ==
+               "players_sessions:#{Base.url_encode64(player_token)}"
     end
 
     test "does not authenticate if data is missing", %{conn: conn, player: player} do
@@ -113,11 +117,106 @@ defmodule TankTurnTacticsWeb.PlayerAuthTest do
     end
   end
 
+  describe "on_mount: mount_current_player" do
+    test "assigns current_player based on a valid player_token ", %{conn: conn, player: player} do
+      player_token = Players.generate_player_session_token(player)
+      session = conn |> put_session(:player_token, player_token) |> get_session()
+
+      {:cont, updated_socket} =
+        PlayerAuth.on_mount(:mount_current_player, %{}, session, %LiveView.Socket{})
+
+      assert updated_socket.assigns.current_player.id == player.id
+    end
+
+    test "assigns nil to current_ player assign if there isn't a valid player_token ", %{conn: conn} do
+      player_token = "invalid_token"
+      session = conn |> put_session(:player_token, player_token) |> get_session()
+
+      {:cont, updated_socket} =
+        PlayerAuth.on_mount(:mount_current_player, %{}, session, %LiveView.Socket{})
+
+      assert updated_socket.assigns.current_player == nil
+    end
+
+    test "assigns nil to current_ player assign if there isn't a player_token", %{conn: conn} do
+      session = conn |> get_session()
+
+      {:cont, updated_socket} =
+        PlayerAuth.on_mount(:mount_current_player, %{}, session, %LiveView.Socket{})
+
+      assert updated_socket.assigns.current_player == nil
+    end
+  end
+
+  describe "on_mount: ensure_authenticated" do
+    test "authenticates current_player based on a valid player_token ", %{conn: conn, player: player} do
+      player_token = Players.generate_player_session_token(player)
+      session = conn |> put_session(:player_token, player_token) |> get_session()
+
+      {:cont, updated_socket} =
+        PlayerAuth.on_mount(:ensure_authenticated, %{}, session, %LiveView.Socket{})
+
+      assert updated_socket.assigns.current_player.id == player.id
+    end
+
+    test "redirects to login page if there isn't a valid player_token ", %{conn: conn} do
+      player_token = "invalid_token"
+      session = conn |> put_session(:player_token, player_token) |> get_session()
+
+      socket = %LiveView.Socket{
+        endpoint: TankTurnTacticsWeb.Endpoint,
+        assigns: %{__changed__: %{}, flash: %{}}
+      }
+
+      {:halt, updated_socket} = PlayerAuth.on_mount(:ensure_authenticated, %{}, session, socket)
+      assert updated_socket.assigns.current_player == nil
+    end
+
+    test "redirects to login page if there isn't a player_token ", %{conn: conn} do
+      session = conn |> get_session()
+
+      socket = %LiveView.Socket{
+        endpoint: TankTurnTacticsWeb.Endpoint,
+        assigns: %{__changed__: %{}, flash: %{}}
+      }
+
+      {:halt, updated_socket} = PlayerAuth.on_mount(:ensure_authenticated, %{}, session, socket)
+      assert updated_socket.assigns.current_player == nil
+    end
+  end
+
+  describe "on_mount: :redirect_if_player_is_authenticated" do
+    test "redirects if there is an authenticated  player ", %{conn: conn, player: player} do
+      player_token = Players.generate_player_session_token(player)
+      session = conn |> put_session(:player_token, player_token) |> get_session()
+
+      assert {:halt, _updated_socket} =
+               PlayerAuth.on_mount(
+                 :redirect_if_player_is_authenticated,
+                 %{},
+                 session,
+                 %LiveView.Socket{}
+               )
+    end
+
+    test "Don't redirect is there is no authenticated player", %{conn: conn} do
+      session = conn |> get_session()
+
+      assert {:cont, _updated_socket} =
+               PlayerAuth.on_mount(
+                 :redirect_if_player_is_authenticated,
+                 %{},
+                 session,
+                 %LiveView.Socket{}
+               )
+    end
+  end
+
   describe "redirect_if_player_is_authenticated/2" do
     test "redirects if player is authenticated", %{conn: conn, player: player} do
       conn = conn |> assign(:current_player, player) |> PlayerAuth.redirect_if_player_is_authenticated([])
       assert conn.halted
-      assert redirected_to(conn) == "/"
+      assert redirected_to(conn) == ~p"/"
     end
 
     test "does not redirect if player is not authenticated", %{conn: conn} do
@@ -131,8 +230,9 @@ defmodule TankTurnTacticsWeb.PlayerAuthTest do
     test "redirects if player is not authenticated", %{conn: conn} do
       conn = conn |> fetch_flash() |> PlayerAuth.require_authenticated_player([])
       assert conn.halted
-      assert redirected_to(conn) == Routes.player_session_path(conn, :new)
-      assert get_flash(conn, :error) == "You must log in to access this page."
+      assert redirected_to(conn) == ~p"/players/log_in"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+        "You must log in to access this page."
     end
 
     test "stores the path to redirect to on GET", %{conn: conn} do

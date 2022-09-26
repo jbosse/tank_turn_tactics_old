@@ -7,7 +7,8 @@ defmodule TankTurnTacticsWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_tank_turn_tactics_key",
-    signing_salt: "OED+68lt"
+    signing_salt: "bQLQU+Lg",
+    same_site: "Lax"
   ]
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
@@ -20,7 +21,7 @@ defmodule TankTurnTacticsWeb.Endpoint do
     at: "/",
     from: :tank_turn_tactics,
     gzip: false,
-    only: ~w(assets fonts images favicon.ico robots.txt)
+    only: TankTurnTacticsWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
