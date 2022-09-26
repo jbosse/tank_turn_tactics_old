@@ -90,7 +90,7 @@ defmodule TankTurnTactics.Players do
 
   """
   def change_player_registration(%Player{} = player, attrs \\ %{}) do
-    Player.registration_changeset(player, attrs, hash_password: false)
+    Player.registration_changeset(player, attrs, hash_password: false, validate_email: false)
   end
 
   ## Settings
@@ -105,7 +105,7 @@ defmodule TankTurnTactics.Players do
 
   """
   def change_player_email(player, attrs \\ %{}) do
-    Player.email_changeset(player, attrs)
+    Player.email_changeset(player, attrs, validate_email: false)
   end
 
   @doc """
@@ -157,18 +157,23 @@ defmodule TankTurnTactics.Players do
     |> Ecto.Multi.delete_all(:tokens, PlayerToken.player_and_contexts_query(player, [context]))
   end
 
-  @doc """
+  @doc ~S"""
   Delivers the update email instructions to the given player.
 
   ## Examples
 
-      iex> deliver_update_email_instructions(player, current_email, &Routes.player_update_email_url(conn, :edit, &1))
+      iex> deliver_player_update_email_instructions(player, current_email, &url(~p"/players/settings/confirm_email/#{&1})")
       {:ok, %{to: ..., body: ...}}
 
   """
-  def deliver_update_email_instructions(%Player{} = player, current_email, update_email_url_fun)
+  def deliver_player_update_email_instructions(
+        %Player{} = player,
+        current_email,
+        update_email_url_fun
+      )
       when is_function(update_email_url_fun, 1) do
-    {encoded_token, player_token} = PlayerToken.build_email_token(player, "change:#{current_email}")
+    {encoded_token, player_token} =
+      PlayerToken.build_email_token(player, "change:#{current_email}")
 
     Repo.insert!(player_token)
     PlayerNotifier.deliver_update_email_instructions(player, update_email_url_fun.(encoded_token))
@@ -237,22 +242,22 @@ defmodule TankTurnTactics.Players do
   @doc """
   Deletes the signed token with the given context.
   """
-  def delete_session_token(token) do
+  def delete_player_session_token(token) do
     Repo.delete_all(PlayerToken.token_and_context_query(token, "session"))
     :ok
   end
 
   ## Confirmation
 
-  @doc """
+  @doc ~S"""
   Delivers the confirmation email instructions to the given player.
 
   ## Examples
 
-      iex> deliver_player_confirmation_instructions(player, &Routes.player_confirmation_url(conn, :edit, &1))
+      iex> deliver_player_confirmation_instructions(player, &url(~p"/players/confirm/#{&1}"))
       {:ok, %{to: ..., body: ...}}
 
-      iex> deliver_player_confirmation_instructions(confirmed_player, &Routes.player_confirmation_url(conn, :edit, &1))
+      iex> deliver_player_confirmation_instructions(confirmed_player, &url(~p"/players/confirm/#{&1}"))
       {:error, :already_confirmed}
 
   """
@@ -263,7 +268,11 @@ defmodule TankTurnTactics.Players do
     else
       {encoded_token, player_token} = PlayerToken.build_email_token(player, "confirm")
       Repo.insert!(player_token)
-      PlayerNotifier.deliver_confirmation_instructions(player, confirmation_url_fun.(encoded_token))
+
+      PlayerNotifier.deliver_confirmation_instructions(
+        player,
+        confirmation_url_fun.(encoded_token)
+      )
     end
   end
 
@@ -291,12 +300,12 @@ defmodule TankTurnTactics.Players do
 
   ## Reset password
 
-  @doc """
+  @doc ~S"""
   Delivers the reset password email to the given player.
 
   ## Examples
 
-      iex> deliver_player_reset_password_instructions(player, &Routes.player_reset_password_url(conn, :edit, &1))
+      iex> deliver_player_reset_password_instructions(player, &url(~p"/players/reset_password/#{&1}"))
       {:ok, %{to: ..., body: ...}}
 
   """
@@ -304,7 +313,11 @@ defmodule TankTurnTactics.Players do
       when is_function(reset_password_url_fun, 1) do
     {encoded_token, player_token} = PlayerToken.build_email_token(player, "reset_password")
     Repo.insert!(player_token)
-    PlayerNotifier.deliver_reset_password_instructions(player, reset_password_url_fun.(encoded_token))
+
+    PlayerNotifier.deliver_reset_password_instructions(
+      player,
+      reset_password_url_fun.(encoded_token)
+    )
   end
 
   @doc """

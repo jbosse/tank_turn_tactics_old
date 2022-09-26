@@ -1,9 +1,10 @@
 defmodule TankTurnTacticsWeb.PlayerAuth do
+  use TankTurnTacticsWeb, :verified_routes
+
   import Plug.Conn
   import Phoenix.Controller
 
   alias TankTurnTactics.Players
-  alias TankTurnTacticsWeb.Router.Helpers, as: Routes
 
   # Make the remember me cookie valid for 60 days.
   # If you want bump or reduce this value, also change
@@ -30,8 +31,7 @@ defmodule TankTurnTacticsWeb.PlayerAuth do
 
     conn
     |> renew_session()
-    |> put_session(:player_token, token)
-    |> put_session(:live_socket_id, "players_sessions:#{Base.url_encode64(token)}")
+    |> put_token_in_session(token)
     |> maybe_write_remember_me_cookie(token, params)
     |> redirect(to: player_return_to || signed_in_path(conn))
   end
@@ -72,7 +72,7 @@ defmodule TankTurnTacticsWeb.PlayerAuth do
   """
   def log_out_player(conn) do
     player_token = get_session(conn, :player_token)
-    player_token && Players.delete_session_token(player_token)
+    player_token && Players.delete_player_session_token(player_token)
 
     if live_socket_id = get_session(conn, :live_socket_id) do
       TankTurnTacticsWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
@@ -95,16 +95,92 @@ defmodule TankTurnTacticsWeb.PlayerAuth do
   end
 
   defp ensure_player_token(conn) do
-    if player_token = get_session(conn, :player_token) do
-      {player_token, conn}
+    if token = get_session(conn, :player_token) do
+      {token, conn}
     else
       conn = fetch_cookies(conn, signed: [@remember_me_cookie])
 
-      if player_token = conn.cookies[@remember_me_cookie] do
-        {player_token, put_session(conn, :player_token, player_token)}
+      if token = conn.cookies[@remember_me_cookie] do
+        {token, put_token_in_session(conn, token)}
       else
         {nil, conn}
       end
+    end
+  end
+
+  @doc """
+  Handles mounting and authenticating the current_player in LiveViews.
+
+  ## `on_mount` arguments
+
+    * `:mount_current_player` - Assigns current_player
+      to socket assigns based on player_token, or nil if
+      there's no player_token or no matching player.
+
+    * `:ensure_authenticated` - Authenticates the player from the session,
+      and assigns the current_player to socket assigns based
+      on player_token.
+      Redirects to login page if there's no logged player.
+
+    * `:redirect_if_player_is_authenticated` - Authenticates the player from the session.
+      Redirects to signed_in_path if there's a logged player.
+
+  ## Examples
+
+  Use the `on_mount` lifecycle macro in LiveViews to mount or authenticate
+  the current_player:
+
+      defmodule TankTurnTacticsWeb.PageLive do
+        use TankTurnTacticsWeb, :live_view
+
+        on_mount {TankTurnTacticsWeb.PlayerAuth, :mount_current_player}
+        ...
+      end
+
+  Or use the `live_session` of your router to invoke the on_mount callback:
+
+      live_session :authenticated, on_mount: [{TankTurnTacticsWeb.PlayerAuth, :ensure_authenticated}] do
+        live "/profile", ProfileLive, :index
+      end
+  """
+  def on_mount(:mount_current_player, _params, session, socket) do
+    {:cont, mount_current_player(session, socket)}
+  end
+
+  def on_mount(:ensure_authenticated, _params, session, socket) do
+    socket = mount_current_player(session, socket)
+
+    if socket.assigns.current_player do
+      {:cont, socket}
+    else
+      socket =
+        socket
+        |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
+        |> Phoenix.LiveView.redirect(to: ~p"/players/log_in")
+
+      {:halt, socket}
+    end
+  end
+
+  def on_mount(:redirect_if_player_is_authenticated, _params, session, socket) do
+    socket = mount_current_player(session, socket)
+
+    if socket.assigns.current_player do
+      {:halt, Phoenix.LiveView.redirect(socket, to: signed_in_path(socket))}
+    else
+      {:cont, socket}
+    end
+  end
+
+  defp mount_current_player(session, socket) do
+    case session do
+      %{"player_token" => player_token} ->
+        Phoenix.Component.assign_new(socket, :current_player, fn ->
+          Players.get_player_by_session_token(player_token)
+        end)
+
+      %{} ->
+        Phoenix.Component.assign_new(socket, :current_player, fn -> nil end)
     end
   end
 
@@ -134,9 +210,15 @@ defmodule TankTurnTacticsWeb.PlayerAuth do
       conn
       |> put_flash(:error, "You must log in to access this page.")
       |> maybe_store_return_to()
-      |> redirect(to: Routes.player_session_path(conn, :new))
+      |> redirect(to: ~p"/players/log_in")
       |> halt()
     end
+  end
+
+  defp put_token_in_session(conn, token) do
+    conn
+    |> put_session(:player_token, token)
+    |> put_session(:live_socket_id, "players_sessions:#{Base.url_encode64(token)}")
   end
 
   defp maybe_store_return_to(%{method: "GET"} = conn) do
@@ -145,5 +227,5 @@ defmodule TankTurnTacticsWeb.PlayerAuth do
 
   defp maybe_store_return_to(conn), do: conn
 
-  defp signed_in_path(_conn), do: "/"
+  defp signed_in_path(_conn), do: ~p"/"
 end

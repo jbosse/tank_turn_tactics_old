@@ -8,7 +8,7 @@ defmodule TankTurnTactics.Players.PlayerNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"MyApp", "contact@example.com"})
+      |> from({"TankTurnTactics", "contact@example.com"})
       |> subject(subject)
       |> text_body(body)
 

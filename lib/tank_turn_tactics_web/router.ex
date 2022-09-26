@@ -28,14 +28,13 @@ defmodule TankTurnTacticsWeb.Router do
   #   pipe_through :api
   # end
 
-  # Enables LiveDashboard only for development
-  #
-  # If you want to use the LiveDashboard in production, you should put
-  # it behind authentication and allow only admins to access it.
-  # If your application does not have an admins-only section yet,
-  # you can use Plug.BasicAuth to set up some basic authentication
-  # as long as you are also using SSL (which you should anyway).
-  if Mix.env() in [:dev, :test] do
+  # Enable LiveDashboard and Swoosh mailbox preview in development
+  if Application.compile_env(:tank_turn_tactics, :dev_routes) do
+    # If you want to use the LiveDashboard in production, you should put
+    # it behind authentication and allow only admins to access it.
+    # If your application does not have an admins-only section yet,
+    # you can use Plug.BasicAuth to set up some basic authentication
+    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/" do
@@ -43,13 +42,7 @@ defmodule TankTurnTacticsWeb.Router do
 
       live_dashboard "/dashboard", metrics: TankTurnTacticsWeb.Telemetry
     end
-  end
 
-  # Enables the Swoosh mailbox preview in development.
-  #
-  # Note that preview only shows emails that were sent by the same
-  # node running the Phoenix server.
-  if Mix.env() == :dev do
     scope "/dev" do
       pipe_through :browser
 
@@ -62,31 +55,35 @@ defmodule TankTurnTacticsWeb.Router do
   scope "/", TankTurnTacticsWeb do
     pipe_through [:browser, :redirect_if_player_is_authenticated]
 
-    get "/players/register", PlayerRegistrationController, :new
-    post "/players/register", PlayerRegistrationController, :create
-    get "/players/log_in", PlayerSessionController, :new
+    live_session :redirect_if_player_is_authenticated,
+      on_mount: [{TankTurnTacticsWeb.PlayerAuth, :redirect_if_player_is_authenticated}] do
+      live "/players/register", PlayerRegistrationLive, :new
+      live "/players/log_in", PlayerLoginLive, :new
+      live "/players/reset_password", PlayerForgotPasswordLive, :new
+      live "/players/reset_password/:token", PlayerResetPasswordLive, :edit
+    end
+
     post "/players/log_in", PlayerSessionController, :create
-    get "/players/reset_password", PlayerResetPasswordController, :new
-    post "/players/reset_password", PlayerResetPasswordController, :create
-    get "/players/reset_password/:token", PlayerResetPasswordController, :edit
-    put "/players/reset_password/:token", PlayerResetPasswordController, :update
   end
 
   scope "/", TankTurnTacticsWeb do
     pipe_through [:browser, :require_authenticated_player]
 
-    get "/players/settings", PlayerSettingsController, :edit
-    put "/players/settings", PlayerSettingsController, :update
-    get "/players/settings/confirm_email/:token", PlayerSettingsController, :confirm_email
+    live_session :require_authenticated_player,
+      on_mount: [{TankTurnTacticsWeb.PlayerAuth, :ensure_authenticated}] do
+      live "/players/settings", PlayerSettingsLive, :edit
+      live "/players/settings/confirm_email/:token", PlayerSettingsLive, :confirm_email
+    end
   end
 
   scope "/", TankTurnTacticsWeb do
     pipe_through [:browser]
 
     delete "/players/log_out", PlayerSessionController, :delete
-    get "/players/confirm", PlayerConfirmationController, :new
-    post "/players/confirm", PlayerConfirmationController, :create
-    get "/players/confirm/:token", PlayerConfirmationController, :edit
-    post "/players/confirm/:token", PlayerConfirmationController, :update
+    live_session :current_player,
+      on_mount: [{TankTurnTacticsWeb.PlayerAuth, :mount_current_player}] do
+      live "/players/confirm/:token", PlayerConfirmationLive, :edit
+      live "/players/confirm", PlayerConfirmationInstructionsLive, :new
+    end
   end
 end
