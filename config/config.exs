@@ -9,7 +9,7 @@ import Config
 
 config :tank_turn_tactics,
   ecto_repos: [TankTurnTactics.Repo],
-  version: System.get_env("VERSION") || "#{Mix.env()}",
+  version: System.get_env("VERSION") || "#{Mix.env()}"
 
 # Configures the endpoint
 config :tank_turn_tactics, TankTurnTacticsWeb.Endpoint,
