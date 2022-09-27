@@ -20,5 +20,6 @@
       <% end %>
     </ul>
     <%= @inner_content %>
+    <footer><%= Application.fetch_env!(:tank_turn_tactics, :version) %></footer>
   </body>
 </html>
